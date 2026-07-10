@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>harel — もやもやを、可視化する</title>
+<!-- Webフォント：Zen Kaku Gothic New（Google Fonts） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
 <!-- スタイルは style.css に分離。同じフォルダに置いてください -->
 <link rel="stylesheet" href="style.css">
 </head>
@@ -134,16 +138,26 @@
   </div>
 
   <!-- ========== 記録一覧（折りたたみ） ========== -->
-  <button class="acc-toggle" id="accToggleList" aria-expanded="false" onclick="toggleAccList()">
-    これまでの記録 <span class="chev">▾</span>
-  </button>
-  <div class="acc-body acc-list" id="entryListWrap"><div class="acc-inner card"><div id="entryList"></div></div></div>
+  <div class="acc">
+    <button class="acc-toggle" id="accToggleList" aria-expanded="false" onclick="toggleAccList()">
+      これまでの記録 <span class="chev">▾</span>
+    </button>
+    <div class="acc-body" id="entryListWrap"><div class="acc-inner"><div class="acc-content"><div id="entryList"></div></div></div></div>
+  </div>
 
   <!-- ========== ちいさな可視化（折りたたみ・初期は閉じる） ========== -->
-  <button class="acc-toggle" id="accToggle" aria-expanded="false" onclick="toggleAcc()">
-    体の反応の傾向 <span class="chev">▾</span>
-  </button>
-  <div class="acc-body" id="bodyChartWrap"><div class="acc-inner card"><div id="bodyChart"></div></div></div>
+  <div class="acc">
+    <button class="acc-toggle" id="accToggle" aria-expanded="false" onclick="toggleAcc()">
+      体の反応の傾向 <span class="chev">▾</span>
+    </button>
+    <div class="acc-body" id="bodyChartWrap"><div class="acc-inner"><div class="acc-content"><div id="bodyChart"></div></div></div></div>
+  </div>
+
+  <!-- ========== シェアボタン（アプリ自体をシェア。日記の中身は含めない） ========== -->
+  <div class="share-bar">
+    <a class="share-btn share-x" id="shareX" href="#" target="_blank" rel="noopener">Xでシェア</a>
+    <a class="share-btn share-line" id="shareLine" href="#" target="_blank" rel="noopener">LINEでシェア</a>
+  </div>
 </div>
 
 <script>
@@ -381,6 +395,20 @@ function formatDate(iso){
     }, 300); // 少し遅れてUIがフェードイン
     setTimeout(() => splash.remove(), FADE_OUT); // 消えたら要素ごと撤去
   }, FADE_IN + HOLD);
+})();
+
+/* =================================================================
+   7) シェアボタンのリンク組み立て
+   -----------------------------------------------------------------
+   日記の中身は含めず、アプリのURLと紹介文だけをシェアする。
+   ================================================================= */
+(function initShare(){
+  const url = encodeURIComponent(location.href);
+  const text = encodeURIComponent('harel - もやもやを、可視化する');
+  const x = document.getElementById('shareX');
+  const line = document.getElementById('shareLine');
+  if(x)    x.href    = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+  if(line) line.href = `https://social-plugins.line.me/lineit/share?url=${url}&text=${text}`;
 })();
 
 /* 起動時に一覧を描画 */
