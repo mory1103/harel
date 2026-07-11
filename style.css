@@ -1,131 +1,104 @@
 /* ===========================================================
    harel — スタイルシート
-   デザインは後から調整する前提の最小スタイル。
+   真昼の青空・ライトグラスモーフィズム（DESIGN.md 準拠）
    色や余白はこの :root の変数をいじれば全体に効きます。
    =========================================================== */
 :root{
-  --bg1:#274ec2;          /* 深い青（左上） */
-  --bg2:#2fb6b0;          /* ティール（中間） */
-  --bg3:#4fd07a;          /* グリーン（右下） */
-  --bg4:#8bec6a;          /* ライム（明るい抜け） */
-  /* ---- 画面全体の背景シーン ----
-     色点を自由に配置したフリーグラデーション。濃い色（青・ティール）と
-     明るい色（ライム・ミント）を隣り合わせて、コントラストをはっきり出す。
-     body と #splash で共通利用（変数化して二重管理を解消） */
-  --scene:
-    radial-gradient(40% 36% at 8% 2%,    rgba(37,74,200,.92),   transparent 60%),  /* 左上：深い青（濃） */
-    radial-gradient(30% 26% at 34% 20%,  rgba(126,166,244,.55), transparent 62%),  /* 中上：明るい青 */
-    radial-gradient(48% 42% at 98% 96%,  rgba(56,214,116,.92),  transparent 60%),  /* 右下：鮮やかな緑（濃） */
-    radial-gradient(26% 24% at 80% 82%,  rgba(150,246,138,.72), transparent 64%),  /* 右下手前：ライム（明） */
-    radial-gradient(34% 30% at 100% 4%,  rgba(66,214,224,.80),  transparent 58%),  /* 右上：水色 */
-    radial-gradient(30% 28% at 4% 90%,   rgba(12,146,146,.85),  transparent 60%),  /* 左下：深いティール（濃） */
-    radial-gradient(20% 17% at 50% 54%,  rgba(200,252,226,.38), transparent 64%),  /* 中央：淡いミントの抜け（控えめ） */
-    radial-gradient(28% 26% at 66% 32%,  rgba(86,116,236,.55),  transparent 62%),  /* 中央右上：青紫 */
-    conic-gradient(from 200deg at 52% 48%, rgba(37,74,200,.20), rgba(40,200,200,.14), rgba(70,220,120,.22), rgba(126,166,244,.16), rgba(37,74,200,.20)),  /* ゆるい色相の回転 */
-    linear-gradient(155deg, var(--bg1) 0%, var(--bg2) 46%, var(--bg3) 78%, var(--bg4) 100%);  /* ベースの斜めグラデ（濃→明） */
-  --card:rgba(255,255,255,.6);   /* 白背景の不透明度は60%で統一 */
-  --ink:#2f4858;          /* 文字色（濃い青緑グレー） */
-  --muted:#6b7180;        /* 補助テキスト */
-  --accent:#3fb8ad;       /* アクセント（ティール：チェック・バー・チェブロン等） */
-  --accent-grad:linear-gradient(90deg,#4bc6bd,#6ed383);  /* ボタン・メーター用のティール→グリーン */
-  --accent-soft:#e0f5f1;  /* 選択ハイライト等の淡いティール */
-  --line:#e3e6ee;
-  --shadow:0 10px 40px rgba(45,115,125,.28);  /* 背景の青緑に馴染むティール系の影 */
-  --radius:16px;
+  /* 背景グラデーション（真昼の空 → 薄い水色 → 陽光の淡い黄） */
+  --bg1:#4a9de0;
+  --bg2:#8fc8ef;
+  --bg3:#fdf6dc;   /* ごく薄い黄色。明るさを担う「光」 */
+
+  /* ガラス（ライトテーマ：白ガラス） */
+  --glass-bg:rgba(255,255,255,.35);
+  --glass-bg-strong:rgba(255,255,255,.50);   /* hover・強調面 */
+  --glass-border:rgba(255,255,255,.65);
+  --glass-shadow:0 8px 32px rgba(30,80,130,.18);
+  --blur:16px;
+
+  /* 既存変数の再定義 */
+  --card:var(--glass-bg);
+  --ink:#173a5c;                 /* 本文（濃紺。白文字は使わない） */
+  --muted:rgba(23,58,92,.60);    /* 補助テキスト（半透明の濃紺） */
+  --accent:#0ea5e9;              /* スカイブルー（メーター・チェック等） */
+  --accent-deep:#0284c7;         /* グラデーション下端・ゴースト文字 */
+  --accent-soft:rgba(14,165,233,.14); /* 選択面・タグ背景 */
+  --line:rgba(23,58,92,.18);     /* 罫線・入力枠（半透明の濃紺） */
+  --radius:20px;
   --maxw:560px;
 }
 *{box-sizing:border-box}
 body{
   margin:0;
-  position:relative;                 /* 背景ゆらめき（疑似要素）の基準 */
   font-family:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
   color:var(--ink);
   min-height:100vh;
-  /* 複数のグラデを重ねて、単調にならない複雑な色の広がりに（定義は :root の --scene）*/
-  background:var(--scene);
+  background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
   background-attachment:fixed;
-  padding:24px 16px 64px;
+  padding:24px 16px 120px;
   line-height:1.7;
+  color-scheme:light;
 }
 
-/* ---- 背景のゆらめき（モヤのかかった光）----
-   ベースのグラデーションの上に、ぼかした光のかたまりを2層重ねて
-   ゆっくり別々に漂わせることで「モヤっとした光のゆらぎ」を作る。
-   ::before / ::after は画面より少し大きく固定配置し、内容の後ろ(z-index:-1)に敷く。 */
-body::before,
-body::after{
-  content:"";
-  position:fixed;
-  inset:-30%;                        /* 動きを大きくしても端が切れないよう画面より大きく */
-  z-index:-1;                        /* 内容の背面・ベース背景の前面 */
-  pointer-events:none;
-  /* 明るい背景では screen 合成だと動きが見えないため通常合成に。
-     濃いめの色の雲がはっきり漂うようにする */
-  will-change:transform,opacity;
+/* ---- 背景装飾（ぼかした光のブロブ） ---- */
+.bg-decor{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.bg-decor span{position:fixed;border-radius:50%;filter:blur(80px)}
+.bg-decor span:nth-child(1){
+  top:-80px;left:-60px;width:420px;height:420px;
+  background:rgba(255,249,196,.45); /* 陽光のごく薄い黄（画面上部） */
 }
-body::before{
-  background:
-    radial-gradient(40% 40% at 30% 35%, rgba(40,205,160,.66), transparent 66%),   /* 鮮やかなミントティール */
-    radial-gradient(44% 44% at 72% 28%, rgba(50,110,235,.64), transparent 66%);   /* 深い青 */
-  filter:blur(55px);
-  animation:mistA 16s ease-in-out infinite alternate;
+.bg-decor span:nth-child(2){
+  top:30%;right:-100px;width:480px;height:480px;
+  background:rgba(255,255,255,.50); /* 雲 */
 }
-body::after{
-  background:
-    radial-gradient(48% 48% at 62% 72%, rgba(20,175,175,.66), transparent 66%),   /* 深いティール */
-    radial-gradient(42% 42% at 22% 78%, rgba(130,235,120,.60), transparent 66%);  /* ライムグリーン */
-  filter:blur(60px);
-  animation:mistB 21s ease-in-out infinite alternate;
+.bg-decor span:nth-child(3){
+  bottom:-120px;left:10%;width:300px;height:300px;
+  background:rgba(125,211,252,.35); /* 淡い空色 */
 }
-@keyframes mistA{
-  0%  {transform:translate3d(-9%,-7%,0) scale(1.00);opacity:.55}
-  50% {transform:translate3d( 8%, 6%,0) scale(1.30);opacity:.95}
-  100%{transform:translate3d(-5%,10%,0) scale(1.12);opacity:.70}
-}
-@keyframes mistB{
-  0%  {transform:translate3d( 8%, 6%,0) scale(1.22);opacity:.50}
-  50% {transform:translate3d(-9%,-6%,0) scale(1.00);opacity:.95}
-  100%{transform:translate3d( 6%,-10%,0) scale(1.32);opacity:.70}
-}
-/* 動きが苦手な人向け：OSで「視差効果を減らす」設定時はアニメを止める */
-@media (prefers-reduced-motion: reduce){
-  body::before,body::after{animation:none}
-}
+
 .wrap{max-width:var(--maxw);margin:0 auto}
 header h1{
-  color:#fff;font-size:1.4rem;letter-spacing:.18em;margin:0 0 2px;font-weight:600;
+  color:var(--ink);font-size:1.4rem;letter-spacing:.18em;margin:0 0 2px;font-weight:600;
 }
-header p{color:rgba(255,255,255,.85);margin:0 0 20px;font-size:.85rem}
+header p{color:var(--muted);margin:0 0 20px;font-size:.85rem}
 
 .card{
   background:var(--card);
+  border:1px solid var(--glass-border);
   border-radius:var(--radius);
   padding:22px 20px;
-  box-shadow:var(--shadow);
-  backdrop-filter:blur(4px);
+  backdrop-filter:blur(var(--blur)) saturate(1.4);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(1.4);
+  box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,.55);
 }
 
-/* ---- ステップ表示 ---- */
+/* ---- ステップ表示（次へ／戻る） ---- */
 .step{display:none}
-.step.is-active{display:block;animation:fade .7s ease}
-@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.step.is-active{display:block;animation:fade .6s cubic-bezier(.19,1,.22,1)}
+@keyframes fade{
+  from{opacity:0;transform:translateY(16px) scale(.97);filter:blur(8px)}
+  to{opacity:1;transform:none;filter:blur(0)}
+}
 
-.progress{font-size:.75rem;color:#fff;margin-bottom:6px;letter-spacing:.05em}
+.progress{font-size:.75rem;color:var(--muted);margin-bottom:6px;letter-spacing:.05em}
 
 /* ---- 終了までのメーター ---- */
 .meter{display:flex;align-items:center;gap:10px;margin-bottom:18px}
-.meter-track{flex:1;height:6px;background:var(--line);border-radius:999px;overflow:hidden}
-.meter-fill{height:100%;width:0;background:var(--accent-grad);border-radius:999px;transition:width .35s ease}
+.meter-track{flex:1;height:6px;background:rgba(255,255,255,.50);border-radius:999px;overflow:hidden}
+.meter-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-deep));border-radius:999px;transition:width .35s ease}
 .meter-label{font-size:.75rem;color:var(--muted);flex:none;letter-spacing:.05em}
-.q{font-size:1.1rem;font-weight:600;margin:0 0 4px;color:var(--ink)}
+.q{font-size:1.1rem;font-weight:600;margin:0 0 4px}
 .hint{font-size:.8rem;color:var(--muted);margin:0 0 14px}
 
 textarea,input[type=text],input[type=date]{
-  width:100%;border:1px solid var(--line);border-radius:10px;
-  padding:11px 12px;font:inherit;color:var(--muted);background:rgba(255,255,255,.6);
+  width:100%;border:none;border-radius:10px;
+  padding:11px 12px;font:inherit;color:var(--ink);background:rgba(255,255,255,.55);
+  box-shadow:inset 0 1px 3px rgba(23,58,92,.10);
 }
 textarea{min-height:96px;resize:vertical}
-textarea:focus,input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+textarea::placeholder,input::placeholder{color:var(--muted)}
+textarea:focus,input:focus,button:focus{outline:2px solid var(--accent-deep);outline-offset:2px}
+textarea:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--accent-deep);outline-offset:2px}
 
 .field{margin-bottom:14px}
 .field label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:4px}
@@ -134,37 +107,39 @@ textarea:focus,input:focus{outline:2px solid var(--accent-soft);border-color:var
 .opts{display:flex;flex-direction:column;gap:8px}
 .opt{
   display:flex;align-items:center;gap:10px;
-  border:none;border-radius:10px;padding:10px 12px;cursor:pointer;
-  background:rgba(255,255,255,.6);color:var(--muted);
-  transition:background-color .25s ease, color .25s ease;
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;
+  background:rgba(255,255,255,.30);
+  transition:background-color .4s ease, border-color .4s ease;
 }
-.opt:has(input:checked){background:var(--accent-soft);color:var(--accent);font-weight:600}  /* 選択時：淡いティール背景＋文字もブランドカラーへ */
-.opt input{
-  position:relative;
-  width:18px;height:18px;accent-color:var(--accent);
-  background:#ffffff;border:none;cursor:pointer;
-  appearance:none;-webkit-appearance:none;
-}
-.opt input[type=checkbox]{border-radius:4px}
-.opt input[type=radio]{border-radius:50%}  /* ラジオボタンは丸型に */
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
 
-/* 選択時は中心から色が広がるアニメーション */
-.opt input::after{
-  content:"";
-  position:absolute;inset:0;
-  border-radius:inherit;
-  background:var(--accent);
-  transform:scale(0);
-  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+/* 縁取りなし。未選択は半透明白の面のみ、選択で面全体がブランドカラーへ
+   ふわっとアニメーションしながら塗りつぶされる（チェックマーク等は付けない） */
+.opt input[type="radio"],
+.opt input[type="checkbox"]{
+  appearance:none;-webkit-appearance:none;
+  width:20px;height:20px;flex:none;margin:0;
+  background:rgba(255,255,255,.65);
+  cursor:pointer;
+  transition:background-color .4s ease, box-shadow .4s ease;
 }
-.opt input:checked::after{transform:scale(1)}
+.opt input[type="radio"]{border-radius:50%}
+.opt input[type="checkbox"]{border-radius:6px}
+.opt input:checked{
+  background:var(--accent);
+  box-shadow:0 0 0 5px var(--accent-soft);
+}
 
 /* ---- ボタン ---- */
 .row{display:flex;gap:10px;margin-top:20px}
 button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:none}
-.btn-primary{background:var(--accent-grad);color:#fff;flex:1;font-weight:600;border-radius:99px}
-.btn-ghost{background:rgba(255,255,255,.6);color:var(--accent);border:none;flex:1;border-radius:99px}
-.btn-primary:hover{filter:brightness(1.06)}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent),var(--accent-deep));
+  color:#fff;text-shadow:0 1px 2px rgba(2,49,74,.35);
+  flex:1;font-weight:600;transition:filter .2s ease,transform .2s ease;
+}
+.btn-ghost{background:transparent;color:var(--accent-deep);border:1px solid rgba(2,132,199,.35);flex:1}
+.btn-primary:hover{filter:brightness(1.06);transform:translateY(-1px)}
 .btn-wide{width:100%}
 
 /* ---- まとめ ---- */
@@ -172,7 +147,8 @@ button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:n
 .summary dl{margin:0}
 .summary dt{font-size:.75rem;color:var(--muted);margin-top:12px;letter-spacing:.04em}
 .summary dd{margin:2px 0 0;white-space:pre-wrap}
-.tag{display:inline-block;background:var(--accent-soft);color:var(--accent);
+.tag{display:inline-block;background:var(--accent-soft);color:#075985;
+     border:1px solid rgba(14,165,233,.35);
      border-radius:999px;padding:2px 10px;font-size:.8rem;margin:3px 4px 0 0}
 
 /* ---- 記録一覧・可視化 ---- */
@@ -186,83 +162,72 @@ button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:n
 
 .bar-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.8rem}
 .bar-row .name{width:96px;color:var(--muted);flex:none}
-.bar{flex:1;height:14px;background:var(--accent-soft);border-radius:8px;overflow:hidden}
-.bar span{display:block;height:100%;background:var(--accent-grad);border-radius:8px}
+.bar{flex:1;height:14px;background:rgba(255,255,255,.45);border-radius:8px;overflow:hidden}
+.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-deep));border-radius:8px}
 .bar-row .n{width:24px;text-align:right;flex:none;color:var(--muted)}
 
-/* ---- アコーディオン（折りたたみ） ----
-   見出し(.acc-toggle)と本文(.acc-body)が別カードに見えないよう、
-   背景・角丸・影は外側の .acc だけが持つ。中の2つは透明にして
-   1枚の箱の中で開閉するように見せる。 */
-.acc{
-  margin-top:26px;                 /* 各セクションの間隔を広げる */
-  background:var(--card);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  backdrop-filter:blur(4px);
-  overflow:hidden;                 /* 中身を外側の角丸で切り抜く */
-}
+/* ---- アコーディオン（折りたたみ） ---- */
 .acc-toggle{
-  width:100%;text-align:left;background:transparent;color:var(--ink);
-  padding:16px 20px;font-weight:600;display:flex;
+  width:100%;text-align:left;background:var(--card);color:var(--ink);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius);padding:16px 20px;font-weight:600;
+  backdrop-filter:blur(var(--blur)) saturate(1.4);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(1.4);
+  box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,.55);
+  display:flex;
   justify-content:space-between;align-items:center;
 }
-.acc-toggle .chev{transition:transform .25s;color:var(--ink)}
+.acc-toggle .chev{transition:transform .25s;color:var(--accent)}
 .acc-toggle[aria-expanded="true"] .chev{transform:rotate(180deg)}
 .acc-body {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows .35s ease;
+  transition: grid-template-rows .35s ease, margin-top .35s ease;
+  margin-top: 0;
 }
 .acc-body.open {
   grid-template-rows: 1fr;
+  margin-top: 10px;
 }
 .acc-inner {
   overflow: hidden;
   min-height: 0;
 }
-.acc-content{
-  padding:0 20px 18px;
-  border-top:1px solid rgba(47,72,88,.12);  /* 見出しとの境目が分かる程度の仕切り線 */
-  margin-top:2px;
+/* 閉じている間は中身のガラス板（padding分）を隠す。
+   閉じアニメーション(.35s)が終わってから visibility を切る */
+.acc-body:not(.open) .acc-inner{visibility:hidden;transition:visibility 0s linear .35s}
+.acc-body.open .acc-inner{visibility:visible}
+
+/* ---- ガラス面フォールバック（backdrop-filter 非対応環境） ---- */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .card,.acc-toggle{background:rgba(240,248,255,.92)}
 }
 
 /* ---- スプラッシュ（全画面イントロ） ---- */
 #splash{
   position:fixed;inset:0;z-index:50;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:var(--scene);
+  background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
   text-align:center;padding:24px;
   opacity:0;                          /* 最初は透明 → フェードイン */
-  transition:opacity 1.8s ease;       /* 登場をゆっくりに */
+  transition:opacity 1s ease;
 }
 #splash.show{opacity:1}
-#splash.hide{opacity:0;pointer-events:none;transition:opacity 1s ease}  /* フェードアウトは従来どおり1秒 */
+#splash.hide{opacity:0;pointer-events:none}  /* フェードアウト */
 #splash .logo{
-  color:#fff;font-size:2.4rem;letter-spacing:.3em;font-weight:600;margin:0;
-  transform:translateY(14px);transition:transform 1.8s ease;  /* ゆっくりせり上がる */
+  color:var(--ink);font-size:2.4rem;letter-spacing:.3em;font-weight:600;margin:0;
+  transform:translateY(8px);transition:transform 1s ease;
 }
 #splash.show .logo{transform:none}
 #splash .copy{
-  color:rgba(255,255,255,.9);font-size:.95rem;margin:14px 0 0;letter-spacing:.08em;
+  color:var(--ink);font-size:.95rem;margin:14px 0 0;letter-spacing:.08em;
 }
 /* UI本体は最初隠して、スプラッシュ後にフェードイン */
 .wrap{opacity:0;transition:opacity 1.1s ease}
 .wrap.show{opacity:1}
 
-/* ---- シェアボタン ---- */
-.share-bar{
-  display:flex;gap:10px;justify-content:center;
-  margin-top:26px;                 /* 直前セクションとの間隔を他と統一 */
-}
-.share-btn{
-  flex:1;max-width:180px;text-align:center;
-  padding:11px 16px;border-radius:10px;
-  font-size:.85rem;font-weight:600;color:#fff;text-decoration:none;
-}
-.share-btn:hover{filter:brightness(1.08)}
-.share-x{background:#000}
-.share-line{background:#06c755}
+#accToggleList { margin-top: 32px; }
+.acc-list { margin-bottom: 6px; }
 
 /* コピーライトフッター */
 footer {
@@ -272,13 +237,45 @@ footer {
   right: 0;
   text-align: center;
   font-size: .68rem;
-  color: rgba(47,72,88,.72);      /* 明るい背景に合わせ濃色で可読性を確保 */
+  color: var(--muted);
   padding: 10px 0 14px;
   line-height: 1.8;
-  /* 独自の背景・境界線を外して、背後のゆらめきアニメを透けさせる */
+  background: rgba(255,255,255,.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(23,58,92,.10);
   opacity: 0;
   transition: opacity 1.1s ease;
 }
 footer.show {
   opacity: 1;
+}
+
+/* ---- フッター共有リンク（X / LINE） ---- */
+.footer-share{
+  display:flex;justify-content:center;gap:10px;margin-bottom:8px;
+}
+.share-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 14px;border-radius:999px;
+  font-size:.7rem;font-weight:500;text-decoration:none;
+  transition:opacity .2s ease, transform .2s ease;
+}
+.share-btn:hover{opacity:.8;transform:translateY(-1px)}
+.share-btn svg{width:12px;height:12px;fill:currentColor;flex:none}
+.share-x{background:#000;color:#fff}
+.share-line{background:#06c755;color:#fff}
+
+/* ---- 動きを抑える設定への配慮 ---- */
+@media (prefers-reduced-motion: reduce){
+  .step.is-active{animation:none}
+  .meter-fill{transition:none}
+  .btn-primary{transition:none}
+  .btn-primary:hover{transform:none}
+  .acc-body{transition:none}
+  .acc-toggle .chev{transition:none}
+  #splash,#splash .logo,.wrap,footer{transition:none}
+  .opt,.opt input[type="radio"],.opt input[type="checkbox"]{transition:none}
+  .share-btn{transition:none}
+  .share-btn:hover{transform:none}
 }
