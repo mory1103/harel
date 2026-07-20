@@ -10,10 +10,10 @@
   --bg3:#fdf6dc;   /* ごく薄い黄色。明るさを担う「光」 */
 
   /* ガラス（ライトテーマ：白ガラス） */
-  --glass-bg:rgba(255,255,255,.35);
+  --glass-bg:rgba(255,255,255,.42);
   --glass-bg-strong:rgba(255,255,255,.50);   /* hover・強調面 */
   --glass-border:rgba(255,255,255,.65);
-  --glass-shadow:0 8px 32px rgba(30,80,130,.18);
+  --glass-shadow:0 8px 32px rgba(30,80,130,.22);
   --blur:16px;
 
   /* 既存変数の再定義 */
@@ -54,14 +54,30 @@ body{
 .bg-decor span:nth-child(1){
   top:-80px;left:-60px;width:420px;height:420px;
   background:rgba(255,249,196,.45); /* 陽光のごく薄い黄（画面上部） */
+  animation:drift1 22s ease-in-out infinite alternate;
 }
 .bg-decor span:nth-child(2){
   top:30%;right:-100px;width:480px;height:480px;
   background:rgba(255,255,255,.50); /* 雲 */
+  animation:drift2 18s ease-in-out infinite alternate;
 }
 .bg-decor span:nth-child(3){
   bottom:-120px;left:10%;width:300px;height:300px;
   background:rgba(125,211,252,.35); /* 淡い空色 */
+  animation:drift3 24s ease-in-out infinite alternate;
+}
+/* ブロブがゆっくり大きく漂う動き（translate/scaleの振幅は大きめ） */
+@keyframes drift1{
+  0%{transform:translate(0,0) scale(1)}
+  100%{transform:translate(70px,50px) scale(1.2)}
+}
+@keyframes drift2{
+  0%{transform:translate(0,0) scale(1)}
+  100%{transform:translate(-60px,70px) scale(.85)}
+}
+@keyframes drift3{
+  0%{transform:translate(0,0) scale(1)}
+  100%{transform:translate(50px,-60px) scale(1.15)}
 }
 
 .wrap{max-width:var(--maxw);margin:0 auto}
@@ -73,7 +89,6 @@ header p{color:var(--muted);margin:0 0 20px;font-size:var(--fs-sm)}
 
 .card{
   background:var(--card);
-  border:1px solid var(--glass-border);
   border-radius:var(--radius);
   padding:22px 20px;
   backdrop-filter:blur(var(--blur)) saturate(1.4);
@@ -99,7 +114,7 @@ header p{color:var(--muted);margin:0 0 20px;font-size:var(--fs-sm)}
   font-size:var(--fs-xs);color:var(--muted);flex:none;letter-spacing:.12em;
   font-variant-numeric:tabular-nums;
 }
-.q{font-size:var(--fs-lg);font-weight:700;line-height:1.35;margin:0 0 4px}
+.q{font-size:var(--fs-lg);font-weight:500;line-height:1.35;margin:0 0 4px}
 .hint{font-size:var(--fs-xs);color:var(--muted);margin:0 0 14px}
 
 textarea,input[type=text],input[type=date]{
@@ -113,17 +128,21 @@ textarea:focus,input:focus,button:focus{outline:2px solid var(--accent-deep);out
 textarea:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--accent-deep);outline-offset:2px}
 
 .field{margin-bottom:14px}
-.field label{display:block;font-size:var(--fs-sm);font-weight:500;color:var(--muted);margin-bottom:4px}
+.field label{display:block;font-size:var(--fs-sm);font-weight:300;color:var(--muted);margin-bottom:4px}
 
 /* ---- 選択肢（ラジオ／チェック） ---- */
 .opts{display:flex;flex-direction:column;gap:8px}
 .opt{
   display:flex;align-items:center;gap:10px;
-  border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;
-  background:rgba(255,255,255,.30);
-  transition:background-color .4s ease, border-color .4s ease;
+  border-radius:10px;padding:11px 12px;cursor:pointer;
+  background:rgba(255,255,255,.55);
+  box-shadow:inset 0 1px 3px rgba(23,58,92,.10);
+  transition:background-color .4s ease, box-shadow .4s ease;
 }
-.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt:has(input:checked){
+  background:var(--accent-soft);
+  box-shadow:inset 0 1px 3px rgba(23,58,92,.10), 0 0 0 4px var(--accent-soft);
+}
 
 /* 縁取りなし。未選択は半透明白の面のみ、選択で面全体がブランドカラーへ
    ふわっとアニメーションしながら塗りつぶされる（チェックマーク等は付けない） */
@@ -147,10 +166,10 @@ textarea:focus-visible,input:focus-visible,button:focus-visible{outline:2px soli
 button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:none}
 .btn-primary{
   background:linear-gradient(135deg,var(--accent),var(--accent-deep));
-  color:#fff;text-shadow:0 1px 2px rgba(2,49,74,.35);
-  flex:1;font-weight:500;transition:filter .2s ease,transform .2s ease;
+  color:#fff;
+  flex:1;font-weight:300;transition:filter .2s ease,transform .2s ease;
 }
-.btn-ghost{background:transparent;color:var(--accent-deep);border:1px solid rgba(2,132,199,.35);flex:1}
+.btn-ghost{background:rgba(255,255,255,.55);color:var(--accent-deep);border:none;flex:1}
 .btn-primary:hover{filter:brightness(1.06);transform:translateY(-1px)}
 .btn-wide{width:100%}
 
@@ -164,7 +183,7 @@ button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:n
      border-radius:999px;padding:2px 10px;font-size:var(--fs-xs);margin:3px 4px 0 0}
 
 /* ---- 記録一覧・可視化 ---- */
-.section-title{color:var(--ink);font-size:var(--fs-md);font-weight:500;margin:28px 0 10px;letter-spacing:0}
+.section-title{color:var(--ink);font-size:var(--fs-md);font-weight:300;margin:28px 0 10px;letter-spacing:0}
 .entry{border-bottom:1px solid var(--line);padding:12px 0;
        display:flex;justify-content:space-between;align-items:center;gap:12px}
 .entry:last-child{border-bottom:none}
@@ -174,15 +193,14 @@ button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:n
 
 .bar-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:var(--fs-xs)}
 .bar-row .name{width:96px;color:var(--muted);flex:none}
-.bar{flex:1;height:14px;background:rgba(255,255,255,.45);border-radius:8px;overflow:hidden}
-.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-deep));border-radius:8px}
+.bar{flex:1;height:14px;background:rgba(255,255,255,.50);border-radius:999px;overflow:hidden}
+.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-deep));border-radius:999px}
 .bar-row .n{width:24px;text-align:right;flex:none;color:var(--muted)}
 
 /* ---- アコーディオン（折りたたみ） ---- */
 .acc-toggle{
   width:100%;text-align:left;background:var(--card);color:var(--ink);
-  border:1px solid var(--glass-border);
-  border-radius:var(--radius);padding:16px 20px;font-weight:500;
+  border-radius:var(--radius);padding:16px 20px;font-weight:300;
   backdrop-filter:blur(var(--blur)) saturate(1.4);
   -webkit-backdrop-filter:blur(var(--blur)) saturate(1.4);
   box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,.55);
@@ -191,6 +209,8 @@ button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:n
 }
 .acc-toggle .chev{transition:transform .25s;color:var(--accent)}
 .acc-toggle[aria-expanded="true"] .chev{transform:rotate(180deg)}
+/* 開いている間は下側の角丸を消し、下につながる内容と1枚の箱に見せる */
+.acc-toggle[aria-expanded="true"]{border-radius:var(--radius) var(--radius) 0 0}
 .acc-body {
   display: grid;
   grid-template-rows: 0fr;
@@ -199,11 +219,17 @@ button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:n
 }
 .acc-body.open {
   grid-template-rows: 1fr;
-  margin-top: 10px;
+  margin-top: 0;
 }
 .acc-inner {
   overflow: hidden;
   min-height: 0;
+}
+/* 内容側のガラス板は見出しと地続きに見せるため、上側の角丸と
+   独自の縁ハイライトを打ち消し、下方向の影だけを残す */
+.acc-body .acc-inner.card{
+  border-radius:0 0 var(--radius) var(--radius);
+  box-shadow:var(--glass-shadow);
 }
 /* 閉じている間は中身のガラス板（padding分）を隠す。
    閉じアニメーション(.35s)が終わってから visibility を切る */
@@ -271,7 +297,7 @@ footer.show {
 .share-btn{
   display:inline-flex;align-items:center;gap:5px;
   padding:6px 14px;border-radius:999px;
-  font-size:var(--fs-xs);font-weight:500;text-decoration:none;
+  font-size:var(--fs-xs);font-weight:300;text-decoration:none;
   transition:opacity .2s ease, transform .2s ease;
 }
 .share-btn:hover{opacity:.8;transform:translateY(-1px)}
@@ -281,6 +307,7 @@ footer.show {
 
 /* ---- 動きを抑える設定への配慮 ---- */
 @media (prefers-reduced-motion: reduce){
+  .bg-decor span{animation:none}
   .step.is-active{animation:none}
   .meter-fill{transition:none}
   .btn-primary{transition:none}
