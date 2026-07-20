@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6bb3e0" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#6bb3e0">
 <title>harel — もやもやを、可視化する</title>
@@ -119,7 +119,7 @@
 
     <!-- STEP 6: 次どうできそう -->
     <section class="step" data-step="6">
-      <p class="q">次に同じことが起きたら、どうできそう？</p>
+      <p class="q">次に同じことが起きたら、<br>どうできそう？</p>
       <p class="hint">ヒント：小さな一歩でOK、できなくても責めないこと</p>
       <textarea id="f-next" placeholder="例）気になったら一晩おいてみる、安心する音楽を聴く"></textarea>
       <div class="row">
@@ -137,6 +137,17 @@
       </div>
     </section>
 
+    <!-- STEP 8: 登録完了 -->
+    <section class="step" data-step="8">
+      <p class="q">登録しました</p>
+      <p class="hint">今日も、よく気づけたね。おつかれさま。</p>
+      <div class="row">
+        <button class="btn-ghost" onclick="restart()">もう一度登録する</button>
+        <button class="btn-primary" onclick="shareApp()">アプリをシェアする</button>
+      </div>
+      <p class="share-privacy-note">※シェアしても、入力した記録の内容が共有されることはありません。</p>
+    </section>
+
   </div>
 </div>
 
@@ -147,7 +158,7 @@
 <button class="menu-fab" id="menuFab" aria-expanded="false" aria-controls="menuPanel" aria-label="メニューを開く" onclick="toggleMenu()">
   <span class="menu-fab-bars" aria-hidden="true"><span></span><span></span><span></span></span>
 </button>
-<div class="menu-panel" id="menuPanel">
+<div class="menu-panel" id="menuPanel" inert>
   <div class="menu-panel-inner card">
 
     <!-- ========== 記録一覧（折りたたみ） ========== -->
@@ -217,19 +228,28 @@ const Store = {
 let current = 1;
 const steps = document.querySelectorAll('.step');
 
-function show(n){
-  steps.forEach(s => s.classList.toggle('is-active', Number(s.dataset.step) === n));
+function show(n, opts){
+  // opts.back === true のときは「戻る」による遷移。
+  // 段階フェードではなく画面全体を一括フェードインさせるため、
+  // 新しくアクティブになるステップにだけ .nav-back を付け、他は必ず外す。
+  const back = !!(opts && opts.back);
+  steps.forEach(s => {
+    const active = Number(s.dataset.step) === n;
+    s.classList.toggle('is-active', active);
+    s.classList.toggle('nav-back', active && back);
+  });
   current = n;
-  // メーター更新（1〜6は割合、7=まとめは満タン表示）
+  // メーター更新（1〜6は割合、7=まとめ、8=登録完了は満タン表示）
   const total = 6;
   const fill = document.getElementById('meterFill');
   const label = document.getElementById('meterLabel');
   if(n <= total){ fill.style.width = (n / total * 100) + '%'; label.textContent = n + ' / ' + total; }
-  else { fill.style.width = '100%'; label.textContent = 'まとめ'; }
+  else if(n === total + 1){ fill.style.width = '100%'; label.textContent = 'まとめ'; }
+  else { fill.style.width = '100%'; label.textContent = '完了'; }
   window.scrollTo({top:0, behavior:'smooth'});
 }
 function next(){ show(current + 1); }
-function back(){ show(current - 1); }
+function back(){ show(current - 1, {back:true}); }
 
 /* =================================================================
    2.5) 質問の登場アニメーション（.q を1文字ずつ→.hint→入力欄→.rowの順）
@@ -238,23 +258,44 @@ function back(){ show(current - 1); }
    delay の計算は起動時に一度だけ行い、inline styleに焼き込んでおく。
    実際にフェードインさせるアニメーション自体はCSS（.step.is-active 配下）側で
    定義しており、ここではdelayの割り振りとテキストのspan分割だけを行う。
+   フェードイン速度は全体的に旧実装の約0.8倍（duration換算で約1.25倍）に
+   ゆっくりしてある。ディレイ関連の定数も同じ比率で調整済み。
    ================================================================= */
 (function setupStepReveal(){
-  const CHAR_MS = 60;    // 1文字あたりの間隔
-  const CHAR_DUR = 400;  // 1文字のフェード所要時間
-  const GAP_MS = 150;    // 質問文の表示が終わってから次要素までの間
-  const STEP_MS = 300;   // 要素グループごとの間隔
+  const CHAR_MS = 75;    // 1文字あたりの間隔（旧60ms×1.25）
+  const CHAR_DUR = 500;  // 1文字のフェード所要時間（旧400ms×1.25。CSS側のqCharFadeと揃える）
+  const GAP_MS = 188;    // 質問文の表示が終わってから次要素までの間（旧150ms×1.25）
+  const STEP_MS = 375;   // 要素グループごとの間隔（旧300ms×1.25）
 
   document.querySelectorAll('.step').forEach(step => {
     const q = step.querySelector('.q');
     let qEnd = 0;
     if(q){
-      const text = q.textContent;
-      q.innerHTML = [...text].map((ch, i) => {
-        const safe = ch === ' ' ? '&nbsp;' : escapeHtml(ch);
-        return `<span class="qc" style="animation-delay:${i * CHAR_MS}ms">${safe}</span>`;
-      }).join('');
-      qEnd = Math.max(0, text.length - 1) * CHAR_MS + CHAR_DUR;
+      // <br> による改行（例: STEP6の質問文）を保ったまま、
+      // テキスト部分だけを1文字ずつ .qc スパンに分割する。
+      // q.textContent で丸ごと読み替えると <br> が失われてしまうため、
+      // childNodes を辿ってテキストノードと<br>を区別して処理する。
+      const frag = document.createDocumentFragment();
+      let i = 0; // 文字インデックス（<br>はカウントしない＝delayに影響させない）
+      [...q.childNodes].forEach(node => {
+        if(node.nodeType === Node.TEXT_NODE){
+          [...node.textContent].forEach(ch => {
+            const span = document.createElement('span');
+            span.className = 'qc';
+            span.style.animationDelay = (i * CHAR_MS) + 'ms';
+            span.textContent = ch === ' ' ? ' ' : ch;
+            frag.appendChild(span);
+            i++;
+          });
+        } else if(node.nodeName === 'BR'){
+          frag.appendChild(document.createElement('br'));
+        } else {
+          frag.appendChild(node.cloneNode(true));
+        }
+      });
+      q.innerHTML = '';
+      q.appendChild(frag);
+      qEnd = Math.max(0, i - 1) * CHAR_MS + CHAR_DUR;
     }
 
     let nextDelay = qEnd + GAP_MS;
@@ -270,6 +311,11 @@ function back(){ show(current - 1); }
 
     const row = step.querySelector('.row');
     if(row){ row.style.animationDelay = nextDelay + 'ms'; }
+
+    // STEP8の注意書き（シェアしても記録内容は共有されない旨）はボタン行と
+    // 同じタイミングでフェードインさせる
+    const note = step.querySelector('.share-privacy-note');
+    if(note){ note.style.animationDelay = nextDelay + 'ms'; }
   });
 })();
 
@@ -349,8 +395,7 @@ function saveEntry(){
   Store.save(draft);
   draft = null;
   render();          // 一覧と集計を更新
-  restart();
-  showToast('保存しました');
+  show(8);           // 「登録しました」の完了画面へ
 }
 
 function restart(){
@@ -359,6 +404,27 @@ function restart(){
   document.querySelectorAll('#wizard input:checked').forEach(i => i.checked = false);
   document.getElementById('f-date').valueAsDate = new Date();
   show(1);
+}
+
+/* 完了画面のシェアボタン：アプリ自体のURLをシェアする（記録データは含まない）。
+   Web Share API があればネイティブの共有シートを、無ければクリップボードへの
+   コピーにフォールバックする（さらにClipboard APIも使えない環境ではprompt表示）。 */
+function shareApp(){
+  const url = location.href;
+  const shareData = {
+    title: 'harel',
+    text: 'もやもやを、可視化する - harel',
+    url: url
+  };
+  if(navigator.share){
+    navigator.share(shareData).catch(() => {}); // キャンセル時のエラーは無視
+  } else if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('リンクをコピーしました'))
+      .catch(() => showToast('コピーに失敗しました'));
+  } else {
+    window.prompt('このURLをコピーしてシェアしてね', url);
+  }
 }
 
 /* =================================================================
@@ -418,14 +484,34 @@ function toggleAccList(){
   body.classList.toggle('open', !open);
 }
 
-/* 右下ハンバーガーメニューの開閉（記録一覧／体の反応の傾向／シェアをまとめたパネル） */
+/* 右下ハンバーガーメニューの開閉（記録一覧／体の反応の傾向／シェアをまとめたパネル）
+   閉じた後にボタンやチップが反応しなくなる不具合への対処：
+   従来はCSSの pointer-events:none / visibility:hidden だけに頼っていたが、
+   実機（特にiOS Safari）ではフェードアウト中のオーバーレイがタップを
+   取りこぼす／奪ったままになるケースがあるため、JS側でも二重に保険をかける。
+   ・閉じる瞬間に inert 属性を即座に付与（フォーカス・操作を強制的に無効化）
+   ・フェードアウト完了後（.35s）に display:none で描画からも完全に外す
+   ・素早い連打で開閉が入れ替わってもタイマーが競合しないよう毎回クリア */
+let menuHideTimer = null;
 function toggleMenu(){
   const btn = document.getElementById('menuFab');
   const panel = document.getElementById('menuPanel');
   const open = btn.getAttribute('aria-expanded') === 'true';
-  btn.setAttribute('aria-expanded', String(!open));
-  btn.setAttribute('aria-label', open ? 'メニューを開く' : 'メニューを閉じる');
-  panel.classList.toggle('open', !open);
+  const willOpen = !open;
+  btn.setAttribute('aria-expanded', String(willOpen));
+  btn.setAttribute('aria-label', willOpen ? 'メニューを閉じる' : 'メニューを開く');
+
+  clearTimeout(menuHideTimer);
+  if(willOpen){
+    panel.style.display = '';          // 前回の閉時に外したdisplayを戻す
+    panel.removeAttribute('inert');
+    void panel.offsetHeight;           // 強制リフロー：直後にopenを付けても遷移がきちんと走るようにする
+    panel.classList.add('open');
+  } else {
+    panel.classList.remove('open');
+    panel.setAttribute('inert', '');   // 即座に操作・フォーカスを奪えないようにする
+    menuHideTimer = setTimeout(() => { panel.style.display = 'none'; }, 360);
+  }
 }
 
 /* =================================================================
@@ -463,8 +549,9 @@ function showToast(msg){
   const splash = document.getElementById('splash');
   const wrap = document.querySelector('.wrap');
   const FADE_IN = 50;     // 直後にフェードイン開始
-  const HOLD    = 3000;   // ロゴを見せておく時間（3秒）
-  const FADE_OUT= 1000;   // フェードアウトにかかる時間
+  const HOLD    = 3000;   // ロゴを見せておく時間（3秒。フェード速度とは無関係なので据え置き）
+  const FADE_OUT= 1250;   // フェードアウトにかかる時間（旧1000ms×1.25。#splashのCSS transitionと合わせる）
+  const UI_GAP  = 375;    // splashのフェードアウト開始からUIのフェードイン開始までの間（旧300ms×1.25）
 
   setTimeout(() => splash.classList.add('show'), FADE_IN);
   setTimeout(() => {
@@ -474,7 +561,7 @@ function showToast(msg){
       wrap.classList.add('show');
       document.querySelector('footer').classList.add('show');
       document.getElementById('menuFab').classList.add('show'); // 右下メニューボタンも同じタイミングでフェードイン
-    }, 300); // 少し遅れてUIがフェードイン
+    }, UI_GAP); // 少し遅れてUIがフェードイン
     setTimeout(() => splash.remove(), FADE_OUT); // 消えたら要素ごと撤去
   }, FADE_IN + HOLD);
 })();
