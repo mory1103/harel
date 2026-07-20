@@ -137,18 +137,44 @@
     </section>
 
   </div>
+</div>
 
-  <!-- ========== 記録一覧（折りたたみ） ========== -->
-  <button class="acc-toggle" id="accToggleList" aria-expanded="false" onclick="toggleAccList()">
-    これまでの記録 <span class="chev">▾</span>
-  </button>
-  <div class="acc-body acc-list" id="entryListWrap"><div class="acc-inner card"><div id="entryList"></div></div></div>
+<!-- ========== 右下メニュー（これまでの記録／体の反応の傾向／シェア をまとめる） ==========
+     ボタンは丸いガラスFAB。タップでガラスカードのパネルが開き、
+     既存のアコーディオン2つとシェアボタンをそのまま格納する。
+     中のID（entryList / bodyChart / share-x / share-line 等）は既存JSのため変更しない。 -->
+<button class="menu-fab" id="menuFab" aria-expanded="false" aria-controls="menuPanel" aria-label="メニューを開く" onclick="toggleMenu()">
+  <span class="menu-fab-bars" aria-hidden="true"><span></span><span></span><span></span></span>
+</button>
+<div class="menu-panel" id="menuPanel">
+  <div class="menu-panel-inner card">
 
-  <!-- ========== ちいさな可視化（折りたたみ・初期は閉じる） ========== -->
-  <button class="acc-toggle" id="accToggle" aria-expanded="false" onclick="toggleAcc()">
-    体の反応の傾向 <span class="chev">▾</span>
-  </button>
-  <div class="acc-body" id="bodyChartWrap"><div class="acc-inner card"><div id="bodyChart"></div></div></div>
+    <!-- ========== 記録一覧（折りたたみ） ========== -->
+    <button class="acc-toggle" id="accToggleList" aria-expanded="false" onclick="toggleAccList()">
+      これまでの記録 <span class="chev">▾</span>
+    </button>
+    <div class="acc-body acc-list" id="entryListWrap"><div class="acc-inner card"><div id="entryList"></div></div></div>
+
+    <!-- ========== ちいさな可視化（折りたたみ・初期は閉じる） ========== -->
+    <button class="acc-toggle" id="accToggle" aria-expanded="false" onclick="toggleAcc()">
+      体の反応の傾向 <span class="chev">▾</span>
+    </button>
+    <div class="acc-body" id="bodyChartWrap"><div class="acc-inner card"><div id="bodyChart"></div></div></div>
+
+    <!-- ========== シェア（X / LINE） ========== -->
+    <p class="menu-section-label">シェアする</p>
+    <div class="footer-share">
+      <a id="share-x" class="share-btn share-x" href="#" target="_blank" rel="noopener" aria-label="Xでシェア">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>
+        シェア
+      </a>
+      <a id="share-line" class="share-btn share-line" href="#" target="_blank" rel="noopener" aria-label="LINEでシェア">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.070 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+        LINE
+      </a>
+    </div>
+
+  </div>
 </div>
 
 <script>
@@ -349,6 +375,16 @@ function toggleAccList(){
   body.classList.toggle('open', !open);
 }
 
+/* 右下ハンバーガーメニューの開閉（記録一覧／体の反応の傾向／シェアをまとめたパネル） */
+function toggleMenu(){
+  const btn = document.getElementById('menuFab');
+  const panel = document.getElementById('menuPanel');
+  const open = btn.getAttribute('aria-expanded') === 'true';
+  btn.setAttribute('aria-expanded', String(!open));
+  btn.setAttribute('aria-label', open ? 'メニューを開く' : 'メニューを閉じる');
+  panel.classList.toggle('open', !open);
+}
+
 /* =================================================================
    5) ちょっとした補助
    ================================================================= */
@@ -383,6 +419,7 @@ function formatDate(iso){
     setTimeout(() => {
       wrap.classList.add('show');
       document.querySelector('footer').classList.add('show');
+      document.getElementById('menuFab').classList.add('show'); // 右下メニューボタンも同じタイミングでフェードイン
     }, 300); // 少し遅れてUIがフェードイン
     setTimeout(() => splash.remove(), FADE_OUT); // 消えたら要素ごと撤去
   }, FADE_IN + HOLD);
@@ -391,12 +428,13 @@ function formatDate(iso){
 /* 起動時に一覧を描画 */
 render();
 
-/* footer（コピーライト年・共有リンク）はscriptタグより後に書かれているため、
-   ここで直接参照すると未パース＝null になる。DOMContentLoaded 後に実行する */
+/* footer（コピーライト年）・共有リンク（右下メニュー内）はscriptタグより後に
+   書かれているため、ここで直接参照すると未パース＝null になる。
+   DOMContentLoaded 後に実行する */
 document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('cr-year').textContent = new Date().getFullYear();
 
-  /* 共有リンク（X / LINE）
+  /* 共有リンク（X / LINE、右下メニュー内に設置）
      harel の本番URLがまだ確定していないため、現在開いているページの
      location.href を使う。デプロイ先が決まったら固定URLへの差し替えを検討 */
   const shareUrl = encodeURIComponent(location.href);
@@ -408,16 +446,6 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 <footer>
-  <div class="footer-share">
-    <a id="share-x" class="share-btn share-x" href="#" target="_blank" rel="noopener" aria-label="Xでシェア">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>
-      シェア
-    </a>
-    <a id="share-line" class="share-btn share-line" href="#" target="_blank" rel="noopener" aria-label="LINEでシェア">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.070 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
-      LINE
-    </a>
-  </div>
   &copy; <span id="cr-year"></span> harel. All rights reserved.
 </footer>
 </body>
