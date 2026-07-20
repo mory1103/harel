@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#4a9de0">
+<meta name="theme-color" content="#6bb3e0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#6bb3e0">
 <title>harel — もやもやを、可視化する</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -131,7 +132,7 @@
     <section class="step summary" data-step="7">
       <div id="summaryBody"></div>
       <div class="row">
-        <button class="btn-ghost" onclick="restart()">書き直す</button>
+        <button class="btn-ghost" onclick="back()">もどる</button>
         <button class="btn-primary" onclick="saveEntry()">保存する</button>
       </div>
     </section>
@@ -230,6 +231,48 @@ function show(n){
 function next(){ show(current + 1); }
 function back(){ show(current - 1); }
 
+/* =================================================================
+   2.5) 質問の登場アニメーション（.q を1文字ずつ→.hint→入力欄→.rowの順）
+   -----------------------------------------------------------------
+   各ステップの中身（質問文の文字数など）はページ読み込み後に変わらないため、
+   delay の計算は起動時に一度だけ行い、inline styleに焼き込んでおく。
+   実際にフェードインさせるアニメーション自体はCSS（.step.is-active 配下）側で
+   定義しており、ここではdelayの割り振りとテキストのspan分割だけを行う。
+   ================================================================= */
+(function setupStepReveal(){
+  const CHAR_MS = 60;    // 1文字あたりの間隔
+  const CHAR_DUR = 400;  // 1文字のフェード所要時間
+  const GAP_MS = 150;    // 質問文の表示が終わってから次要素までの間
+  const STEP_MS = 300;   // 要素グループごとの間隔
+
+  document.querySelectorAll('.step').forEach(step => {
+    const q = step.querySelector('.q');
+    let qEnd = 0;
+    if(q){
+      const text = q.textContent;
+      q.innerHTML = [...text].map((ch, i) => {
+        const safe = ch === ' ' ? '&nbsp;' : escapeHtml(ch);
+        return `<span class="qc" style="animation-delay:${i * CHAR_MS}ms">${safe}</span>`;
+      }).join('');
+      qEnd = Math.max(0, text.length - 1) * CHAR_MS + CHAR_DUR;
+    }
+
+    let nextDelay = qEnd + GAP_MS;
+
+    const hint = step.querySelector('.hint');
+    if(hint){ hint.style.animationDelay = nextDelay + 'ms'; nextDelay += STEP_MS; }
+
+    // 入力欄（textarea / 選択肢 / フィールド）とSTEP7のまとめ本文は
+    // 同じグループとしてまとめてフェードインさせる
+    const fields = step.querySelectorAll('textarea, .opts, .field, #summaryBody');
+    fields.forEach(el => { el.style.animationDelay = nextDelay + 'ms'; });
+    if(fields.length){ nextDelay += STEP_MS; }
+
+    const row = step.querySelector('.row');
+    if(row){ row.style.animationDelay = nextDelay + 'ms'; }
+  });
+})();
+
 /* 今日の日付を初期値に入れておく */
 document.getElementById('f-date').valueAsDate = new Date();
 
@@ -307,7 +350,7 @@ function saveEntry(){
   draft = null;
   render();          // 一覧と集計を更新
   restart();
-  alert('保存しました。');
+  showToast('保存しました');
 }
 
 function restart(){
@@ -398,6 +441,17 @@ function formatDate(iso){
   return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
+/* ガラスデザインのトースト通知（alert()の代替）。2秒後に自動で消える */
+let toastTimer = null;
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  if(!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
 /* =================================================================
    6) 起動演出（スプラッシュ）
    -----------------------------------------------------------------
@@ -448,5 +502,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <footer>
   &copy; <span id="cr-year"></span> harel. All rights reserved.
 </footer>
+<!-- 保存完了などを知らせるトースト通知（alert()の代替。JSのshowToast()から使う） -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
