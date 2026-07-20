@@ -168,6 +168,26 @@ DOM上の置き場所だけを移動している）。
 | モバイル（560px以下）調整 | `body`のpadding・`.card`のpaddingを少し切り詰め、全画面ウィザードの実質的な表示領域を確保 |
 | `prefers-reduced-motion: reduce` | 上記すべての新規アニメーション（body背景の`bgDrift`、ブロブの拡大した動き、メニューの開閉トランジション、FABのフェードイン、ハンバーガーアイコンの変形）を無効化する記述を追加。body背景は`background-size:100% 100%;background-position:0 0`に固定し直し、旧デザインの静止グラデーションに戻す |
 
+## 10. 追加調整（2026-07-20 実装分・第二次）
+
+以下はセクション9の後に加えた調整。セクション5・8・9の表を上書きする。
+今回もセクション4「HTMLに許される変更」に対する**例外として**、以下のHTML構造変更を許可している:
+`#toast`（トースト通知用div）の新設・body末尾への追加、STEP7のボタンの`onclick`/ラベル変更（`restart()`→`back()`、「書き直す」→「もどる」。`restart()`関数自体は`saveEntry()`から使うため削除しない）。`<head>`のtheme-color metaを1行追加（`media`属性付きのバリアントを追加、値も更新）。header内のマークアップ（`h1`/`p`）自体は変更せず、CSSのみで一行化している。
+
+| 項目 | ルール |
+|---|---|
+| 右下メニューの全画面化 | `.menu-panel`を`position:fixed;inset:0`の全画面オーバーレイに変更（旧: 右下ポップアップ、`width:min(340px,...)`）。背景は`rgba(255,255,255,.55)`＋`backdrop-filter:blur(24px) saturate(1.4)`（`-webkit-`併記）。`display:flex;flex-direction:column;overflow-y:auto`にし、中身`.menu-panel-inner`は`margin:auto`で中央寄せ（`align-items:center`ではなく`margin:auto`を使うのは、内容が画面より長くなってオーバーフローした時に上端が見切れず自然にスクロールできるようにするため。`align-items:center`+`overflow:auto`は一部ブラウザでオーバーフロー分の先頭が見切れる既知の問題があるため回避）。`.menu-panel-inner`に`max-width:var(--maxw)`を追加。開閉のopacity/transform/visibilityアニメーションは維持。`#menuFab`（×ボタン）はz-index(40)が`.menu-panel`(39)より高いため、全画面表示中も右下に見え続ける（コード変更なし） |
+| `@supports not backdrop-filter`フォールバック | `.menu-panel`・`.toast`を対象に追加 |
+| アコーディオン開時のタイトル/本文の分離修正 | 原因は`.menu-panel-inner{gap:14px}`が`.acc-toggle`と直後の`.acc-body`の間にも入ってしまい、開いた時にタイトルと本文カードの間に隙間ができていたこと。`.acc-toggle[aria-expanded="true"] + .acc-body{margin-top:-14px}`を追加し、開いている間だけgap分を打ち消して地続きに見せる（閉時は元のgapのまま＝見た目を変えない）。`margin-top`は既存の`transition:margin-top .35s ease`で滑らかに追従 |
+| アコーディオン開閉のカクつき改善 | `grid-template-rows`による高さアニメーションはブラウザ差でカクつきやすいため、中身`.acc-inner`に独立した`opacity`・`filter:blur()`のクロスフェード（`.35s ease`）を追加し、高さのアニメーションと体感的な滑らかさを分離して補強。閉時`opacity:0;filter:blur(4px)`→開時`opacity:1;filter:blur(0)`。`will-change:opacity, filter`をGPUアクセラレーションのヒントとして付与。`visibility`の切替タイミング（閉じアニメ後に隠す）は従来どおり維持 |
+| ステータスバー（ノッチ）領域の色 | `<meta name="theme-color">`の値を`#4a9de0`→`#6bb3e0`（画面上端の実際の描画色＝bg1と陽光ブロブの重なりに近い、より明るい水色）に変更し、`media="(prefers-color-scheme: light)"`付きバリアントも追加。加えて`body::before`でセーフエリア分（`env(safe-area-inset-top)`）の帯を最上部に敷き、実際の背景色（`--bg1`）と地続きに見せる保険を追加（PWA/フルスクリーン表示時向け）。**実機（iOS Safari）での見え方は本セッションでは確認できていない**ため、コード上の対処に留める |
+| 質問の登場アニメーション | `.step.is-active`全体を1.1sで一斉フェードする方式をやめ、`.q`（質問文）→`.hint`→入力欄（`textarea`/`.opts`/`.field`、STEP7は`#summaryBody`）→`.row`の順に段階的にフェードインする方式に変更。`.q`はJS（`setupStepReveal`）でテキストを`<span class="qc">`に1文字ずつ分割し、`animation-delay`を60msずつ振って`qCharFade`（opacity+translateY、ぼかしなし）でフェード。他要素は既存の`fade`キーフレーム（blur+scale）をそのまま流用し、質問文の表示完了から150ms、以降300ms間隔でグループごとにdelayを設定（JSが起動時に1回だけ計算し、inline styleに焼き込む。ステップの中身は固定なので毎回の再計算は不要）。いずれも`animation:... both`でdelay中・終了後の状態を保持し、ちらつきを防止 |
+| 「書き直す」→「もどる」 | STEP7（まとめ画面）の左ボタンを`onclick="restart()"`から`onclick="back()"`に変更し、ラベルも他ステップと同じ「もどる」に統一。`restart()`関数自体は`saveEntry()`が呼び出すため削除していない |
+| 保存トースト通知 | `alert('保存しました。')`を廃止し、ガラスカードのトースト通知`#toast`に置き換え。HTML: `<div id="toast" class="toast" role="status" aria-live="polite"></div>`をbody末尾に追加。CSS: セクション3のガラスレシピに準拠（`background:var(--glass-bg-strong)`、`border`、`backdrop-filter`＋`-webkit-`併記、`box-shadow`＋内側ハイライト、`color:var(--ink)`）。画面上部中央に`position:fixed`、`opacity:0;transform:translate(-50%,-12px)`→`.show`で`opacity:1;transform:translate(-50%,0)`（`.3s ease`）。JS: `showToast(msg)`を新設し、`saveEntry()`内で使用。2秒後（`setTimeout`）に自動で`.show`を外して消える |
+| フッターの背景削除 | `footer`の`background`・`backdrop-filter`・`-webkit-backdrop-filter`・`border-top`をすべて削除し、透明背景に。文字は`var(--muted)`のまま、`padding`・`position:fixed`も維持。ページ背景（グラデーション＋ブロブ）に直接溶け込む見た目になる |
+| 「つぎへ」ボタンのグラデーション反転 | `--accent-bright:#7dd3fc`（sky-300相当）を`:root`に新設。`.btn-primary`の背景を`linear-gradient(135deg,var(--accent),var(--accent-deep))`→`linear-gradient(135deg,var(--accent-bright),var(--accent))`に変更（左＝明るいスカイブルー、右＝旧・左側の色`--accent`）。白文字（`#fff`）が明るい左側でも読めるよう`text-shadow:0 1px 3px rgba(3,50,75,.55)`を追加（旧実装にはtext-shadowがなかったため新規追加） |
+| ヘッダーの一行化 | `header`を`display:flex;align-items:baseline;gap:10px`にし、`h1`と`p`を横並びの一行に。高さを削るため`h1`のフォントサイズを`--fs-xl`(32px)→`--fs-lg`(20px)に、`p`を`--fs-sm`(14px)→`--fs-xs`(13px)に縮小し、両方とも`margin:0`＋`white-space:nowrap`（`p`は`overflow:hidden;text-overflow:ellipsis`で万一の折返し対策）。モバイル375px幅で確実に一行に収まることを最優先した。旧`@media(max-width:560px)`内の`header p{margin-bottom:14px}`は不要になったため削除 |
+
 ## 7. 検証チェックリスト（実装後に必ず確認）
 
 - [ ] `style.css` 内に旧配色が残っていない。ダーク青版

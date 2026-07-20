@@ -22,6 +22,7 @@
   --muted:rgba(23,58,92,.60);    /* 補助テキスト（半透明の濃紺） */
   --accent:#0ea5e9;              /* スカイブルー（メーター・チェック等） */
   --accent-deep:#0284c7;         /* グラデーション下端・ゴースト文字 */
+  --accent-bright:#7dd3fc;       /* sky-300相当。ボタングラデーションの明るい側 */
   --accent-soft:rgba(14,165,233,.14); /* 選択面・タグ背景 */
   --line:rgba(23,58,92,.18);     /* 罫線・入力枠（半透明の濃紺） */
   --radius:20px;
@@ -56,6 +57,20 @@ body{
   0%{background-position:0% 0%}
   50%{background-position:65% 35%}
   100%{background-position:100% 100%}
+}
+
+/* ---- ステータスバー（ノッチ）領域の色を画面上端の描画色に揃える ----
+   theme-color（<head>）だけだとブラウザ・機種依存でズレることがあるため、
+   セーフエリア分の帯をbodyの最上部に敷いて、実際の背景色と地続きに見せる。
+   PWA/フルスクリーン表示時（env(safe-area-inset-top)が効く環境）向けの保険 */
+body::before{
+  content:"";
+  position:fixed;
+  top:0;left:0;right:0;
+  height:env(safe-area-inset-top, 0px);
+  background:var(--bg1);
+  z-index:51;                 /* #splash(50)より上、実機のノッチ領域と重なる想定 */
+  pointer-events:none;
 }
 
 /* ---- 背景装飾（ぼかした光のブロブ） ---- */
@@ -106,11 +121,22 @@ body{
   min-height:calc(100dvh - 104px);
   display:flex;flex-direction:column;
 }
-header h1{
-  color:var(--ink);font-family:var(--font-logo);font-size:var(--fs-xl);
-  letter-spacing:.12em;line-height:1.35;margin:0 0 2px;font-weight:400;
+/* ヘッダーはロゴ＋コピーを横並びの一行にして高さを抑える。
+   モバイル375px幅でも確実に一行に収まるよう、ロゴはfs-lg(20px)、
+   コピーはfs-xs(13px)まで落としている */
+header{
+  display:flex;align-items:baseline;gap:10px;
+  margin:0 0 14px;
 }
-header p{color:var(--muted);margin:0 0 20px;font-size:var(--fs-sm)}
+header h1{
+  color:var(--ink);font-family:var(--font-logo);font-size:var(--fs-lg);
+  letter-spacing:.12em;line-height:1;margin:0;font-weight:400;
+  white-space:nowrap;
+}
+header p{
+  color:var(--muted);margin:0;font-size:var(--fs-xs);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
 
 .card{
   background:var(--card);
@@ -138,7 +164,6 @@ header p{color:var(--muted);margin:0 0 20px;font-size:var(--fs-sm)}
   flex:1 1 auto;
   min-height:0;
   overflow-y:auto;                 /* STEP3・4など内容が長い時は内側でスクロール */
-  animation:fade 1.1s cubic-bezier(.19,1,.22,1);
 }
 /* テキストエリア1つだけのステップ（1・5・6）は、テキストエリア自体を
    残り高さまで伸ばして「余白がぽっかり空く」のを防ぐ */
@@ -146,6 +171,33 @@ header p{color:var(--muted);margin:0 0 20px;font-size:var(--fs-sm)}
 @keyframes fade{
   from{opacity:0;transform:translateY(16px) scale(.97);filter:blur(8px)}
   to{opacity:1;transform:none;filter:blur(0)}
+}
+
+/* ---- ステップ登場アニメーション：質問文→ヒント→入力欄→ボタン行の順 ----
+   .qは1文字ずつのシンプルなopacity+translateY（ぼかしなし）。
+   他要素は既存のfadeキーフレーム（blur+scale）をそのまま流用し、
+   JS（setupStepReveal）が焼き込んだanimation-delayで段階的に下ろす。
+   both を指定し、delay中も終了後もキーフレームの端の状態を保持して
+   ちらつき（一瞬フル表示→非表示）を防ぐ */
+.q .qc{display:inline-block}
+@keyframes qCharFade{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:none}
+}
+/* スプラッシュ中はアニメを走らせない（走ると背後で完走してしまい、
+   .wrap がフェードインした時には全部表示済みで演出が見えなくなる）。
+   .wrap.show が付いた瞬間にルールが新規マッチし、per-span/per-element の
+   delay に沿ってきちんと段階的に立ち上がる */
+.wrap.show .step.is-active .q .qc{
+  animation:qCharFade .35s ease both;
+}
+.wrap.show .step.is-active .hint,
+.wrap.show .step.is-active textarea,
+.wrap.show .step.is-active .opts,
+.wrap.show .step.is-active .field,
+.wrap.show .step.is-active .row,
+.wrap.show .step.is-active #summaryBody{
+  animation:fade .5s cubic-bezier(.19,1,.22,1) both;
 }
 
 .progress{font-size:var(--fs-xs);color:var(--muted);margin-bottom:6px;letter-spacing:0}
@@ -213,8 +265,11 @@ textarea:focus-visible,input:focus-visible,button:focus-visible{outline:2px soli
 .row{display:flex;gap:10px;margin-top:auto;padding-top:20px}
 button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:none}
 .btn-primary{
-  background:linear-gradient(135deg,var(--accent),var(--accent-deep));
+  /* 左＝明るいスカイブルー（--accent-bright）→右＝旧・左側の色（--accent）へ反転。
+     明るい面に白文字を乗せるためtext-shadowでコントラストを補強 */
+  background:linear-gradient(135deg,var(--accent-bright),var(--accent));
   color:#fff;
+  text-shadow:0 1px 3px rgba(3,50,75,.55);
   flex:1;font-weight:300;transition:filter .2s ease,transform .2s ease;
 }
 .btn-ghost{background:rgba(255,255,255,.55);color:var(--accent-deep);border:none;flex:1}
@@ -269,9 +324,21 @@ button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:n
   grid-template-rows: 1fr;
   margin-top: 0;
 }
+/* 開いている間、.menu-panel-inner のflex gap（14px）がトグルと本文の間に
+   入ってしまい、タイトルと本文が離れて見えるのを打ち消す（gapと同値の
+   負のmargin-topで相殺。閉時は元のgapのまま＝見た目を変えない） */
+.acc-toggle[aria-expanded="true"] + .acc-body{
+  margin-top: -14px;
+}
 .acc-inner {
   overflow: hidden;
   min-height: 0;
+  /* 高さのアニメーション（grid-template-rows）はブラウザ差でカクつきやすいため、
+     中身自体はopacity+blurのクロスフェードで滑らかさを補う */
+  opacity: 0;
+  filter: blur(4px);
+  transition: opacity .35s ease, filter .35s ease;
+  will-change: opacity, filter;
 }
 /* 内容側のガラス板は見出しと地続きに見せるため、上側の角丸と
    独自の縁ハイライトを打ち消し、下方向の影だけを残す */
@@ -281,14 +348,22 @@ button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:n
 }
 /* 閉じている間は中身のガラス板（padding分）を隠す。
    閉じアニメーション(.35s)が終わってから visibility を切る */
-.acc-body:not(.open) .acc-inner{visibility:hidden;transition:visibility 0s linear .35s}
-.acc-body.open .acc-inner{visibility:visible}
+.acc-body:not(.open) .acc-inner{
+  visibility:hidden;
+  transition:opacity .35s ease, filter .35s ease, visibility 0s linear .35s;
+}
+.acc-body.open .acc-inner{
+  visibility:visible;
+  opacity:1;
+  filter:blur(0);
+  transition:opacity .35s ease, filter .35s ease, visibility 0s linear 0s;
+}
 
 /* ---- ガラス面フォールバック（backdrop-filter 非対応環境） ----
    .menu-fab はガラスレシピを直書きしている新設ガラス面のため対象に追加。
    .menu-panel-inner は .card クラスを流用しているため既に対象に含まれる */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .card,.acc-toggle,.menu-fab{background:rgba(240,248,255,.92)}
+  .card,.acc-toggle,.menu-fab,.menu-panel,.toast{background:rgba(240,248,255,.92)}
 }
 
 /* ---- スプラッシュ（全画面イントロ） ---- */
@@ -321,7 +396,7 @@ button{font:inherit;cursor:pointer;border-radius:10px;padding:11px 16px;border:n
 #accToggleList { margin-top: 0; }
 .acc-list { margin-bottom: 0; }
 
-/* コピーライトフッター */
+/* コピーライトフッター（背景なし。ページ背景に自然に溶け込ませる） */
 footer {
   position: fixed;
   bottom: 0;
@@ -332,15 +407,41 @@ footer {
   color: var(--muted);
   padding: 10px 0 14px;
   line-height: 1.8;
-  background: rgba(255,255,255,.55);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(23,58,92,.10);
   opacity: 0;
   transition: opacity 1.1s ease;
 }
 footer.show {
   opacity: 1;
+}
+
+/* ---- トースト通知（alert()の代替） ----
+   保存完了などをサイトデザイン（ガラスカード）に合わせて知らせる。
+   画面上部中央にfixed表示し、2秒後にJS（showToast）が.showを外して消す */
+.toast{
+  position:fixed;
+  top:max(20px, env(safe-area-inset-top));
+  left:50%;
+  z-index:60;
+  width:max-content;
+  max-width:min(320px, calc(100vw - 40px));
+  padding:12px 20px;
+  border-radius:var(--radius);
+  background:var(--glass-bg-strong);
+  border:1px solid var(--glass-border);
+  backdrop-filter:blur(var(--blur)) saturate(1.4);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(1.4);
+  box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,.55);
+  color:var(--ink);
+  font-size:var(--fs-sm);
+  text-align:center;
+  opacity:0;
+  pointer-events:none;
+  transform:translate(-50%, -12px);
+  transition:opacity .3s ease, transform .3s ease;
+}
+.toast.show{
+  opacity:1;
+  transform:translate(-50%, 0);
 }
 
 /* ---- 右下メニュー内の共有リンク（X / LINE）
@@ -398,15 +499,23 @@ footer.show {
 .menu-fab[aria-expanded="true"] .menu-fab-bars span:nth-child(2){opacity:0}
 .menu-fab[aria-expanded="true"] .menu-fab-bars span:nth-child(3){top:6px;transform:rotate(-45deg)}
 
+/* 開いた時は画面全体を覆うオーバーレイに。中身（.menu-panel-inner）は
+   画面中央（横方向）に、maxwで幅を制限して表示する。×ボタン（#menuFab）は
+   z-indexがこのパネルより高いので、開いている間も右下に見え続ける */
 .menu-panel{
   position:fixed;
-  right:20px;bottom:80px;      /* FAB(56px)+隙間(12px)の上に出す */
+  inset:0;
   z-index:39;
-  width:min(340px, calc(100vw - 40px));
-  max-height:min(70vh, 70dvh);
+  width:100%;
+  display:flex;flex-direction:column;
   overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:max(24px, env(safe-area-inset-top)) 20px calc(100px + env(safe-area-inset-bottom));
+  background:rgba(255,255,255,.55);
+  backdrop-filter:blur(24px) saturate(1.4);
+  -webkit-backdrop-filter:blur(24px) saturate(1.4);
   opacity:0;
-  transform:translateY(16px) scale(.96);
+  transform:translateY(16px) scale(.98);
   pointer-events:none;
   visibility:hidden;
   transition:opacity .35s ease, transform .35s ease, visibility 0s linear .35s;
@@ -418,7 +527,12 @@ footer.show {
   visibility:visible;
   transition:opacity .35s ease, transform .35s ease, visibility 0s linear 0s;
 }
+/* margin:auto での中央寄せ。align-items:center等での中央寄せと違い、
+   内容が長くなってオーバーフローした時も上端が見切れず、自然にスクロールできる */
 .menu-panel-inner{
+  width:100%;
+  max-width:var(--maxw);
+  margin:auto;
   display:flex;flex-direction:column;gap:14px;
 }
 .menu-section-label{
@@ -432,7 +546,6 @@ footer.show {
   body{padding:16px 12px 80px}
   /* padding変更（上16px＋下80px＝96px）に合わせて引く量も更新 */
   .wrap{min-height:calc(100vh - 96px);min-height:calc(100dvh - 96px)}
-  header p{margin-bottom:14px}
   .card{padding:18px 16px}
 }
 
@@ -441,14 +554,23 @@ footer.show {
   body{animation:none;background-size:100% 100%;background-position:0 0}
   .bg-decor span{animation:none}
   .step.is-active{animation:none}
+  .wrap.show .step.is-active .q .qc,
+  .wrap.show .step.is-active .hint,
+  .wrap.show .step.is-active textarea,
+  .wrap.show .step.is-active .opts,
+  .wrap.show .step.is-active .field,
+  .wrap.show .step.is-active .row,
+  .wrap.show .step.is-active #summaryBody{animation:none}
   .meter-fill{transition:none}
   .btn-primary{transition:none}
   .btn-primary:hover{transform:none}
   .acc-body{transition:none}
+  .acc-inner{transition:none}
   .acc-toggle .chev{transition:none}
   #splash,#splash .logo,.wrap,footer{transition:none}
   .opt,.opt input[type="radio"],.opt input[type="checkbox"]{transition:none}
   .share-btn{transition:none}
   .share-btn:hover{transform:none}
   .menu-fab,.menu-fab:hover,.menu-panel,.menu-fab-bars span{transition:none}
+  .toast{transition:none}
 }
