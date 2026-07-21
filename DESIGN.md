@@ -188,7 +188,25 @@ DOM上の置き場所だけを移動している）。
 | 「つぎへ」ボタンのグラデーション反転 | `--accent-bright:#7dd3fc`（sky-300相当）を`:root`に新設。`.btn-primary`の背景を`linear-gradient(135deg,var(--accent),var(--accent-deep))`→`linear-gradient(135deg,var(--accent-bright),var(--accent))`に変更（左＝明るいスカイブルー、右＝旧・左側の色`--accent`）。白文字（`#fff`）が明るい左側でも読めるよう`text-shadow:0 1px 3px rgba(3,50,75,.55)`を追加（旧実装にはtext-shadowがなかったため新規追加） |
 | ヘッダーの一行化 | `header`を`display:flex;align-items:baseline;gap:10px`にし、`h1`と`p`を横並びの一行に。高さを削るため`h1`のフォントサイズを`--fs-xl`(32px)→`--fs-lg`(20px)に、`p`を`--fs-sm`(14px)→`--fs-xs`(13px)に縮小し、両方とも`margin:0`＋`white-space:nowrap`（`p`は`overflow:hidden;text-overflow:ellipsis`で万一の折返し対策）。モバイル375px幅で確実に一行に収まることを最優先した。旧`@media(max-width:560px)`内の`header p{margin-bottom:14px}`は不要になったため削除 |
 
-## 7. 検証チェックリスト（実装後に必ず確認）
+## 11. 追加調整（2026-07-20 実装分・第三次）
+
+以下はセクション10の後に加えた調整。セクション5・8・9・10の表を上書きする。
+今回もセクション4「HTMLに許される変更」に対する**例外として**、以下のHTML構造変更を許可している:
+`<meta name="viewport">`に`viewport-fit=cover`を追加、STEP8（登録完了画面）の新設と`saveEntry()`の遷移先変更、`shareApp()`関数の新設、`#menuPanel`への`inert`属性の付与、STEP6の質問文に`<br>`を追加。
+
+| 項目 | ルール |
+|---|---|
+| ステータスバー背景の再修正 | 原因を特定：`<meta name="viewport">`に`viewport-fit=cover`が無く、`env(safe-area-inset-*)`が常に`0`を返していたため、前回（セクション10）追加した`body::before`のセーフエリア帯も、`.menu-panel`や`.toast`の`env()`を使った余白も、実質すべて無効化されていた。`viewport-fit=cover`を追加してこれを解消。副作用として本文・固定要素がノッチ／ホームインジケーター領域まで描画されるようになるため、`body`の`padding-top`/`padding-bottom`・`.wrap`の`min-height`・`footer`/`.menu-fab`のオフセットに`env(safe-area-inset-top/bottom)`を反映し直した。加えて`html{background:var(--bg1)}`を追加し、iOSのオーバースクロール（バウンス）時にhtml要素の初期背景（白）が透けて見える問題への保険とした |
+| ハンバーガーメニュー内のカード背景を削除 | `.acc-toggle`・`.acc-body .acc-inner.card`・`.menu-panel-inner`から`background`/`backdrop-filter`/`box-shadow`/`border-radius`を撤去（`.acc-inner`と`.menu-panel-inner`は既存HTML構造上`.card`クラスを併用しているため、2クラスセレクタで`.card`の装飾を上書き）。`@supports not backdrop-filter`フォールバックのリストから`.acc-toggle`を除外。オーバーレイ（`.menu-panel`）自体の面に、パネル内の見出し・本文・共有ボタンが直接載っているように見える |
+| アコーディオン開時のシャドウ削除 | 上記のカード背景撤去と同一の変更で解消（`.acc-inner.card`のbox-shadowが開閉どちらの状態でも一切適用されなくなったため） |
+| STEP1タイトルのフェードイン停止問題 | 原因を特定：`.wrap`の起動フェードイン（旧`opacity 1.1s`）と、STEP1の`.q`文字ごとのフェード（`qCharFade`）が同時に走っていたが、opacityは親子で乗算されるため、`.wrap`がまだ薄い間は`.qc`がローカルに`opacity:1`へ到達していても画面上は薄いまま＝「文字は出そろったのに全体がまだぼんやりしていて、そこで動きが止まって見える」状態になっていた。対策として`.wrap`（および同時にフェードインする`footer`・`.menu-fab`）の起動フェードインを`.4s`に短縮し、`.qc`の段階フェードが始まる頃には`.wrap`がほぼ不透明になるようにして二重フェードの干渉を解消。あわせて`.q .qc`に静的な`opacity:0`を追加し、アニメーション未適用の一瞬でもフル表示されないよう保険をかけた |
+| フェードイン速度の全体調整（0.8倍） | `--char-fade-dur`(`.35s`→`.5s`)・`--step-fade-dur`(`.5s`→`.625s`)を`:root`に追加し、`qCharFade`・`fade`のアニメーション時間をこの変数経由に統一（旧実装の約1.25倍）。JS（`setupStepReveal`）の`CHAR_MS`(60→75)・`CHAR_DUR`(400→500)・`GAP_MS`(150→188)・`STEP_MS`(300→375)も同率で調整。スプラッシュの`FADE_OUT`(1000→1250ms)・splash→UIフェードイン開始までの間（300→375ms）も同率でスロー化（`#splash`のCSS transitionと数値を一致させている）。`HOLD`（ロゴを見せておく3秒）はフェード速度と無関係なため据え置き |
+| 「戻る」時は一括フェード | `show(n, opts)`に`opts.back`を追加し、`back()`は`show(current-1, {back:true})`を呼ぶように変更。`back:true`のときだけ新しくアクティブになるステップに`.nav-back`クラスを付与（他ステップからは必ず外す）。CSS側で`.step.is-active.nav-back`にステップ全体へ1回だけ`fade`をかけ、`.qc`／`.hint`／入力欄／`.row`など個々の段階アニメーションは`animation:none;opacity:1`で無効化し、画面全体が一括でフェードインするようにした（「つぎへ」・まとめ表示は従来どおり段階フェードのまま） |
+| 登録完了画面の追加 | `saveEntry()`の遷移先を`restart()`（即座に入力画面へ戻す）から`show(8)`に変更し、STEP8として「登録しました」の完了画面を新設。「もう一度登録する」ボタンは`restart()`（従来どおり入力欄リセット＋STEP1へ）、「アプリをシェアする」ボタンは新設の`shareApp()`を呼ぶ。`shareApp()`は`navigator.share`があればアプリのURL（`location.href`）をネイティブ共有シートでシェアし、無ければ`navigator.clipboard.writeText`でURLをコピーして`showToast()`で通知、それも使えない環境では`window.prompt`でURLを提示する（共有するのはアプリURLのみで、記録データは一切含めない）。画面下部に「※シェアしても、入力した記録の内容が共有されることはありません。」という注意書き（`.share-privacy-note`）を小さく表示。メーター表示もSTEP8到達時は「完了」ラベルになるよう`show()`を調整（STEP7の「まとめ」とは区別） |
+| ハンバーガーメニュー：閉じた後にボタン・チップが反応しなくなる不具合の修正 | CSS単体（`pointer-events:none`/`visibility:hidden`の遅延切替）はChromiumでの検証では問題を再現できなかったが、実機（特にiOS Safari）では`backdrop-filter`＋`-webkit-overflow-scrolling:touch`を持つフルスクリーンオーバーレイがフェードアウト中にタップを取りこぼす／奪ったままになる既知の類の不具合があるため、JS側に二重の保険を追加。`toggleMenu()`で閉じる瞬間に`#menuPanel`へ`inert`属性を即座に付与（操作・フォーカスを強制的に無効化）し、フェードアウト完了後（360ms）に`style.display='none'`で描画からも完全に外す。開く時は`display`を戻し`inert`を外してから、強制リフロー（`void panel.offsetHeight`）を挟んで`.open`クラスを付与し、`display:none`から復帰した直後でもopen/closeの開閉トランジションがきちんと再生されるようにした。HTML側は初期状態として`#menuPanel`に`inert`属性を静的に追加（初期状態から確実に非対話にしておくため） |
+| 文言変更（STEP6の質問文の改行） | 「次に同じことが起きたら、どうできそう？」の「、」の直後に`<br>`を挿入し、「次に同じことが起きたら、」「どうできそう？」の2行になるよう変更。`.q`の文字送りアニメーション（`setupStepReveal`）は従来`textContent`をまるごと読み替えて再構築していたため`<br>`が失われる問題があり、`childNodes`を辿ってテキストノードと`<br>`要素を区別して処理するよう修正（`<br>`は文字カウント・delay計算の対象外とし、他ステップの質問文の挙動には影響しない） |
+
+
 
 - [ ] `style.css` 内に旧配色が残っていない。ダーク青版
   （`#0b1a33` `#1b2a4a` `#2f4d80` `#eef4fb` `#bae6fd` `#06203a` `#f8a5a5`
